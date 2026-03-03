@@ -2,32 +2,33 @@ pipeline {
     agent any
 
     stages {
-        stage('Temizlik ve Derleme') {
+        stage('Yapılandırma (CMake Configure)') {
             steps {
-                echo 'Eski derleme artiklari temizleniyor...'
-                sh 'make clean'
-                
-                echo 'C++ kodlari derleniyor...'
-                sh 'make'
+                sh 'mkdir -p build'
+                // CMake'e build klasörü içinde hazırlık yapmasını söylüyoruz
+                sh 'cd build && cmake ..'
+            }
+        }
+        
+        stage('Derleme (Build)') {
+            steps {
+                // Sadece 'make' yazmak yeterli, CMake Makefile'ı bizim için oluşturdu
+                sh 'cd build && make'
             }
         }
         
         stage('Test Asamasi') {
             steps {
                 echo 'Test Driver calistiriliyor...'
-                // Eger bu test 1 dondururse, Jenkins bu asamayi KIRMIZI (Failed) yapacak!
-                sh 'make test'
+                // Derlenen test_driver build klasörünün içinde olacak
+                sh './build/test_driver'
             }
         }
     }
     
-    // Asamalar bittikten sonra konsola basilacak mesajlar
     post {
-        success {
-            echo '✅ HARIKA! Tum testler gecti. Senaryo basarili.'
-        }
         failure {
-            echo '❌ BUM! Testler patladi (Bekledigimiz gibi!). Gidip test_driver.cpp dosyasini duzeltmemiz lazim.'
+            echo '❌ Testler patladi! CMake ile derleme basarili ama mantik hatasi var.'
         }
     }
 }
